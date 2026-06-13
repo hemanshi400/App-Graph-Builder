@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
   BackgroundVariant,
   Controls,
-  ConnectionMode
+  ConnectionMode,
+  useReactFlow
 } from '@xyflow/react';
 import type {
   OnNodesChange,
@@ -38,7 +39,59 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 }) => {
   const selectedNodeId = useAppStore((state) => state.selectedNodeId);
   const setSelectedNodeId = useAppStore((state) => state.setSelectedNodeId);
+  const isMobilePanelOpen = useAppStore((state) => state.isMobilePanelOpen);
   const setIsMobilePanelOpen = useAppStore((state) => state.setIsMobilePanelOpen);
+
+  const { fitView } = useReactFlow();
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore shortcuts when user is typing in forms/inputs
+      const activeEl = document.activeElement;
+      if (
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.tagName === 'SELECT' ||
+          activeEl.getAttribute('contenteditable') === 'true')
+      ) {
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+
+      // 1. Fit View: F or Ctrl + F
+      if (key === 'f' || (e.ctrlKey && key === 'f')) {
+        e.preventDefault();
+        fitView({ duration: 400 });
+      }
+
+      // 2. Toggle Inspector Panel: P or Ctrl + B
+      if (key === 'p' || (e.ctrlKey && key === 'b')) {
+        e.preventDefault();
+        if (window.innerWidth < 1024) {
+          // Mobile: toggle mobile sheet visibility
+          setIsMobilePanelOpen(!isMobilePanelOpen);
+        } else {
+          // Desktop: toggle node selection state (closing/opening inspector details)
+          if (selectedNodeId) {
+            setSelectedNodeId(null);
+          } else {
+            const firstNode = nodes[0];
+            if (firstNode) {
+              setSelectedNodeId(firstNode.id);
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [fitView, isMobilePanelOpen, setIsMobilePanelOpen, selectedNodeId, setSelectedNodeId, nodes]);
 
   // Define node types memoized to prevent re-renders
   const nodeTypes = useMemo(() => ({
