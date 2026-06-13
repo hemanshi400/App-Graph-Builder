@@ -21,7 +21,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onAddNode }) => {
         <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
           <Cloud className="h-5 w-5" />
         </div>
-        <div>
+        <div className="hidden lg:block">
           <h1 className="text-base font-semibold tracking-tight text-white flex items-center gap-2">
             App Graph Builder
             <span className="text-xs font-normal text-neutral-500 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -40,7 +40,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onAddNode }) => {
           className="h-9 gap-1.5 border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white transition-all"
         >
           <Plus className="h-4 w-4" />
-          <span>Add Node</span>
+          <span className="hidden lg:inline">Add Node</span>
         </Button>
 
         <Button
@@ -50,7 +50,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onAddNode }) => {
           className="h-9 gap-1.5 border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white transition-all"
         >
           <Maximize2 className="h-4 w-4" />
-          <span>Fit View</span>
+          <span className="hidden lg:inline">Fit View</span>
         </Button>
 
         <Button
@@ -59,7 +59,7 @@ export const TopBar: React.FC<TopBarProps> = ({ onAddNode }) => {
           onClick={() => alert('Deployment started (Mock Action)')}
         >
           <Play className="h-4 w-4 fill-current" />
-          <span>Deploy</span>
+          <span className="hidden lg:inline">Deploy</span>
         </Button>
       </div>
     </header>
