@@ -1,9 +1,13 @@
 import React from 'react';
 import { useReactFlow } from '@xyflow/react';
 import { Button } from '@/components/ui/button';
-import { Cloud, Maximize2, Play, Activity } from 'lucide-react';
+import { Cloud, Maximize2, Play, Activity, Plus } from 'lucide-react';
 
-export const TopBar: React.FC = () => {
+interface TopBarProps {
+  onAddNode: () => void;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({ onAddNode }) => {
   const { fitView } = useReactFlow();
 
   const handleFitView = () => {
@@ -29,6 +33,16 @@ export const TopBar: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onAddNode}
+          className="h-9 gap-1.5 border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white transition-all"
+        >
+          <Plus className="h-4 w-4" />
+          <span>Add Node</span>
+        </Button>
+
         <Button
           variant="outline"
           size="sm"

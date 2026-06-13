@@ -59,11 +59,27 @@ export const Dashboard = () => {
     }
   };
 
+  // Handler to add a new Service Node at a sensible position
+  const handleAddNode = () => {
+    const newNode: Node = {
+      id: crypto.randomUUID(),
+      type: 'service',
+      position: { x: 300, y: 200 },
+      data: {
+        name: 'New Service',
+        status: 'healthy',
+        value: 50,
+        description: '',
+      },
+    };
+    setNodes((nds) => [...nds, newNode]);
+  };
+
   return (
     <ReactFlowProvider>
       <div className="flex flex-col h-screen w-screen bg-neutral-950 text-white overflow-hidden">
         {/* Top Header */}
-        <TopBar />
+        <TopBar onAddNode={handleAddNode} />
 
         {/* Workspace Body */}
         <div className="flex-1 flex min-h-0 relative">
