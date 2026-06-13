@@ -2,19 +2,19 @@ import React from 'react';
 import type { NodeProps } from '@xyflow/react';
 import type { ServiceNodeData } from '../types';
 import { BaseNode } from './BaseNode';
-import { Cpu } from 'lucide-react';
+import { Database } from 'lucide-react';
 
-export const ServiceNode: React.FC<NodeProps> = ({ data, selected }) => {
+export const DatabaseNode: React.FC<NodeProps> = ({ data, selected }) => {
   const serviceData = data as ServiceNodeData;
   const { name, status, value } = serviceData;
 
   return (
     <BaseNode
       selected={selected}
-      accentColor="blue"
-      typeLabel="Service"
-      typeColorClass="text-sky-400 font-bold"
-      defaultIcon={<Cpu className="h-4.5 w-4.5" />}
+      accentColor="green"
+      typeLabel="Database"
+      typeColorClass="text-emerald-400 font-bold"
+      defaultIcon={<Database className="h-4.5 w-4.5" />}
       name={name}
       value={value}
       status={status}

@@ -10,7 +10,8 @@ export interface ServiceNodeData {
   [key: string]: unknown;
 }
 
-export type ServiceNode = Node<ServiceNodeData, 'service'>;
+export type AppGraphNode = Node<ServiceNodeData, 'service' | 'database'>;
+export type ServiceNode = AppGraphNode;
 
 export interface AppItem {
   id: string;
@@ -18,7 +19,7 @@ export interface AppItem {
 }
 
 export interface GraphData {
-  nodes: ServiceNode[];
+  nodes: AppGraphNode[];
   edges: Edge[];
 }
 

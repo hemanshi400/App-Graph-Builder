@@ -92,18 +92,20 @@ export const Dashboard = () => {
   const handleUpdateNode = useCallback(
     (
       id: string,
-      updatedFields: { name?: string; description?: string; value?: number; status?: ServiceStatus }
+      updatedFields: { name?: string; description?: string; value?: number; status?: ServiceStatus; type?: 'service' | 'database' }
     ) => {
       if (!selectedAppId) return;
       queryClient.setQueryData(['graph', selectedAppId], (old: GraphData | undefined) => {
         if (!old) return old;
         const updatedNodes = old.nodes.map((node) => {
           if (node.id === id) {
+            const { type, ...dataFields } = updatedFields;
             return {
               ...node,
+              ...(type ? { type } : {}),
               data: {
                 ...node.data,
-                ...updatedFields,
+                ...dataFields,
               },
             };
           }

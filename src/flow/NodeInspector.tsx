@@ -10,7 +10,7 @@ import { Cpu, Settings, HardDrive, Info, Activity } from 'lucide-react';
 
 interface NodeInspectorProps {
   node: ServiceNode | null;
-  onUpdateNode: (id: string, data: { name?: string; description?: string; value?: number; status?: ServiceStatus }) => void;
+  onUpdateNode: (id: string, data: { name?: string; description?: string; value?: number; status?: ServiceStatus; type?: 'service' | 'database' }) => void;
 }
 
 export const NodeInspector: React.FC<NodeInspectorProps> = ({ node, onUpdateNode }) => {
@@ -97,6 +97,21 @@ export const NodeInspector: React.FC<NodeInspectorProps> = ({ node, onUpdateNode
 
           <div className="flex-1 overflow-y-auto p-4">
             <TabsContent value="config" className="mt-0 space-y-4">
+              {/* Node Type Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-neutral-400">
+                  Node Type
+                </label>
+                <select
+                  value={node.type || 'service'}
+                  onChange={(e) => onUpdateNode(node.id, { type: e.target.value as 'service' | 'database' })}
+                  className="w-full bg-neutral-950 border border-neutral-800 text-neutral-300 text-xs rounded-md px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                >
+                  <option value="service">Service Node (Blue)</option>
+                  <option value="database">Database Node (Green)</option>
+                </select>
+              </div>
+
               {/* Name Field */}
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-neutral-400" htmlFor="node-name">

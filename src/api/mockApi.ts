@@ -26,7 +26,7 @@ const generateMockGraph = (appId: string): GraphData => {
           },
           {
             id: 'postgres',
-            type: 'service',
+            type: 'database',
             position: { x: 450, y: 80 },
             data: {
               name: 'Postgres',
@@ -37,7 +37,7 @@ const generateMockGraph = (appId: string): GraphData => {
           },
           {
             id: 'redis',
-            type: 'service',
+            type: 'database',
             position: { x: 200, y: 320 },
             data: {
               name: 'Redis',
@@ -48,7 +48,7 @@ const generateMockGraph = (appId: string): GraphData => {
           },
           {
             id: 'mongodb',
-            type: 'service',
+            type: 'database',
             position: { x: 550, y: 350 },
             data: {
               name: 'Mongodb',
@@ -80,7 +80,7 @@ const generateMockGraph = (appId: string): GraphData => {
           },
           {
             id: 'mongodb',
-            type: 'service',
+            type: 'database',
             position: { x: 400, y: 100 },
             data: {
               name: 'MongoDB Atlas',
@@ -91,7 +91,7 @@ const generateMockGraph = (appId: string): GraphData => {
           },
           {
             id: 'rabbitmq',
-            type: 'service',
+            type: 'database',
             position: { x: 400, y: 300 },
             data: {
               name: 'RabbitMQ Broker',
@@ -122,7 +122,7 @@ const generateMockGraph = (appId: string): GraphData => {
           },
           {
             id: 'postgres-replica',
-            type: 'service',
+            type: 'database',
             position: { x: 500, y: 50 },
             data: {
               name: 'Postgres Read Replica',
@@ -133,7 +133,7 @@ const generateMockGraph = (appId: string): GraphData => {
           },
           {
             id: 'memcached',
-            type: 'service',
+            type: 'database',
             position: { x: 500, y: 250 },
             data: {
               name: 'Memcached Cluster',

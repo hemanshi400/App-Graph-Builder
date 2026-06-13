@@ -17,6 +17,7 @@ import '@xyflow/react/dist/style.css';
 
 import { useAppStore } from '../store/useAppStore';
 import { ServiceNode } from './ServiceNode';
+import { DatabaseNode } from './DatabaseNode';
 
 interface GraphCanvasProps {
   nodes: Node[];
@@ -41,7 +42,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 
   // Define node types memoized to prevent re-renders
   const nodeTypes = useMemo(() => ({
-    service: ServiceNode
+    service: ServiceNode,
+    database: DatabaseNode
   }), []);
 
   return (
