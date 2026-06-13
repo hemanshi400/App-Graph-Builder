@@ -1,13 +1,15 @@
-import { useEffect } from 'react';
-import { useNodesState, useEdgesState, ReactFlowProvider } from '@xyflow/react';
-import type { Node, Edge } from '@xyflow/react';
+import { useCallback } from 'react';
+import { ReactFlowProvider, applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
+import type { Node, NodeChange, EdgeChange } from '@xyflow/react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAppStore } from '../store/useAppStore';
 import { useGraph } from '../hooks/useGraph';
+import { updateMockGraph } from '../api/mockApi';
 import { TopBar } from '../layout/TopBar';
 import { LeftRail } from '../layout/LeftRail';
 import { RightPanel } from '../layout/RightPanel';
 import { GraphCanvas } from '../flow/GraphCanvas';
-import type { ServiceNode, ServiceStatus } from '../types';
+import type { ServiceNode, ServiceStatus, GraphData } from '../types';
 import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -16,52 +18,124 @@ export const Dashboard = () => {
   const selectedNodeId = useAppStore((state) => state.selectedNodeId);
   const setSelectedNodeId = useAppStore((state) => state.setSelectedNodeId);
 
+  const queryClient = useQueryClient();
+
   // TanStack Query hook
   const { data: graphData, isLoading, isError, error, refetch } = useGraph(selectedAppId);
 
-  // Controlled states for ReactFlow canvas
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  // Derivate nodes and edges directly from TanStack Query cache (no duplicate local state!)
+  const nodes = graphData?.nodes || [];
+  const edges = graphData?.edges || [];
 
-  // Load new graph data when query fetches successfully
-  useEffect(() => {
-    if (graphData) {
-      setNodes(graphData.nodes);
-      setEdges(graphData.edges);
-    }
-  }, [graphData, setNodes, setEdges]);
-
-  // Find currently selected node from local state
+  // Find currently selected node directly from the query data
   const selectedNode = (nodes.find((n) => n.id === selectedNodeId) as ServiceNode) || null;
 
-  // Handler to update selected node data (e.g. from Inspector inputs)
-  const handleUpdateNode = (id: string, updatedFields: { name?: string; description?: string; value?: number; status?: ServiceStatus }) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === id) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              ...updatedFields,
-            },
-          };
+  // ReactFlow onNodesChange callback updating TanStack Query cache directly
+  const onNodesChange = useCallback(
+    (changes: NodeChange[]) => {
+      if (!selectedAppId) return;
+      queryClient.setQueryData(['graph', selectedAppId], (old: GraphData | undefined) => {
+        if (!old) return old;
+        const updatedNodes = applyNodeChanges(changes, old.nodes) as ServiceNode[];
+        
+        // Sync to mock database immediately for persistent changes (e.g. deletion from changes list)
+        const hasPersistentChange = changes.some(
+          (c) => c.type === 'remove'
+        );
+        if (hasPersistentChange) {
+          updateMockGraph(selectedAppId, updatedNodes, old.edges);
         }
-        return node;
-      })
-    );
-  };
+        
+        return {
+          ...old,
+          nodes: updatedNodes,
+        };
+      });
+    },
+    [selectedAppId, queryClient]
+  );
+
+  // ReactFlow onEdgesChange callback updating TanStack Query cache directly
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      if (!selectedAppId) return;
+      queryClient.setQueryData(['graph', selectedAppId], (old: GraphData | undefined) => {
+        if (!old) return old;
+        const updatedEdges = applyEdgeChanges(changes, old.edges);
+        
+        const hasPersistentChange = changes.some(
+          (c) => c.type === 'remove'
+        );
+        if (hasPersistentChange) {
+          updateMockGraph(selectedAppId, old.nodes, updatedEdges);
+        }
+        
+        return {
+          ...old,
+          edges: updatedEdges,
+        };
+      });
+    },
+    [selectedAppId, queryClient]
+  );
+
+  // ReactFlow onNodeDragStop callback to persist final coordinates to the mock database
+  const handleNodeDragStop = useCallback(() => {
+    if (!selectedAppId) return;
+    const currentGraph = queryClient.getQueryData<GraphData>(['graph', selectedAppId]);
+    if (currentGraph) {
+      updateMockGraph(selectedAppId, currentGraph.nodes, currentGraph.edges);
+    }
+  }, [selectedAppId, queryClient]);
+
+  // Handler to update selected node data (e.g. from Inspector inputs)
+  const handleUpdateNode = useCallback(
+    (
+      id: string,
+      updatedFields: { name?: string; description?: string; value?: number; status?: ServiceStatus }
+    ) => {
+      if (!selectedAppId) return;
+      queryClient.setQueryData(['graph', selectedAppId], (old: GraphData | undefined) => {
+        if (!old) return old;
+        const updatedNodes = old.nodes.map((node) => {
+          if (node.id === id) {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                ...updatedFields,
+              },
+            };
+          }
+          return node;
+        });
+
+        // Persist modification in mock database in background
+        updateMockGraph(selectedAppId, updatedNodes, old.edges);
+
+        return {
+          ...old,
+          nodes: updatedNodes,
+        };
+      });
+    },
+    [selectedAppId, queryClient]
+  );
 
   // Handler for nodes deleted via ReactFlow interactions (Backspace/Delete)
-  const handleNodesDelete = (deletedNodes: Node[]) => {
-    if (deletedNodes.some((node) => node.id === selectedNodeId)) {
-      setSelectedNodeId(null);
-    }
-  };
+  const handleNodesDelete = useCallback(
+    (deletedNodes: Node[]) => {
+      if (deletedNodes.some((node) => node.id === selectedNodeId)) {
+        setSelectedNodeId(null);
+      }
+    },
+    [selectedNodeId, setSelectedNodeId]
+  );
 
   // Handler to add a new Service Node at a sensible position
-  const handleAddNode = () => {
-    const newNode: Node = {
+  const handleAddNode = useCallback(() => {
+    if (!selectedAppId) return;
+    const newNode: ServiceNode = {
       id: crypto.randomUUID(),
       type: 'service',
       position: { x: 300, y: 200 },
@@ -72,8 +146,20 @@ export const Dashboard = () => {
         description: '',
       },
     };
-    setNodes((nds) => [...nds, newNode]);
-  };
+
+    queryClient.setQueryData(['graph', selectedAppId], (old: GraphData | undefined) => {
+      if (!old) return old;
+      const updatedNodes = [...old.nodes, newNode];
+      
+      // Persist in mock database
+      updateMockGraph(selectedAppId, updatedNodes, old.edges);
+
+      return {
+        ...old,
+        nodes: updatedNodes,
+      };
+    });
+  }, [selectedAppId, queryClient]);
 
   return (
     <ReactFlowProvider>
@@ -128,6 +214,7 @@ export const Dashboard = () => {
                 onNodesChange={onNodesChange}
                 onEdgesChange={onEdgesChange}
                 onNodesDelete={handleNodesDelete}
+                onNodeDragStop={handleNodeDragStop}
               />
             </div>
           </main>
@@ -142,4 +229,5 @@ export const Dashboard = () => {
     </ReactFlowProvider>
   );
 };
+
 export default Dashboard;

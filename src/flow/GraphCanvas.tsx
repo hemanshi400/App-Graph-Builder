@@ -9,6 +9,7 @@ import {
 import type {
   OnNodesChange,
   OnEdgesChange,
+  OnNodeDrag,
   Node,
   Edge
 } from '@xyflow/react';
@@ -23,6 +24,7 @@ interface GraphCanvasProps {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onNodesDelete: (nodes: Node[]) => void;
+  onNodeDragStop?: OnNodeDrag;
 }
 
 export const GraphCanvas: React.FC<GraphCanvasProps> = ({
@@ -30,7 +32,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   edges,
   onNodesChange,
   onEdgesChange,
-  onNodesDelete
+  onNodesDelete,
+  onNodeDragStop
 }) => {
   const selectedNodeId = useAppStore((state) => state.selectedNodeId);
   const setSelectedNodeId = useAppStore((state) => state.setSelectedNodeId);
@@ -48,6 +51,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         onNodeClick={(_event, node) => {

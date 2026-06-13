@@ -1,4 +1,5 @@
-import type { AppItem, GraphData } from '../types';
+import type { AppItem, GraphData, ServiceNode } from '../types';
+import type { Edge } from '@xyflow/react';
 
 const MOCK_APPS: AppItem[] = [
   { id: '1', name: 'supertokens-golang' },
@@ -160,6 +161,16 @@ export const fetchApps = (): Promise<AppItem[]> => {
   });
 };
 
+// In-memory cache to persist modifications during the current session
+const mockGraphs: Record<string, GraphData> = {};
+
+const getOrGenerateGraph = (appId: string): GraphData => {
+  if (!mockGraphs[appId]) {
+    mockGraphs[appId] = generateMockGraph(appId);
+  }
+  return mockGraphs[appId];
+};
+
 export const fetchGraph = (appId: string): Promise<GraphData> => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -167,8 +178,18 @@ export const fetchGraph = (appId: string): Promise<GraphData> => {
         reject(new Error(`Application with ID "${appId}" not found.`));
       } else {
         // Return deep copy so updates in UI don't mutate local modules cache directly
-        resolve(JSON.parse(JSON.stringify(generateMockGraph(appId))));
+        resolve(JSON.parse(JSON.stringify(getOrGenerateGraph(appId))));
       }
     }, 800); // 800ms latency simulation
+  });
+};
+
+export const updateMockGraph = (appId: string, nodes: ServiceNode[], edges: Edge[]): Promise<void> => {
+  return new Promise((resolve) => {
+    mockGraphs[appId] = {
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges)),
+    };
+    resolve();
   });
 };
