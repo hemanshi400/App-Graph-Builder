@@ -107,6 +107,22 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
+        onNodeDragStart={(_event, node) => {
+          setSelectedNodeId(node.id);
+          if (window.innerWidth < 1024) {
+            setIsMobilePanelOpen(true);
+          }
+        }}
+        onNodeContextMenu={(event, node) => {
+          if (window.innerWidth < 1024) {
+            event.preventDefault();
+            window.dispatchEvent(
+              new CustomEvent('node-long-press', {
+                detail: { id: node.id, name: (node.data as { name?: string })?.name || 'this node' }
+              })
+            );
+          }
+        }}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
         onNodeClick={(_event, node) => {

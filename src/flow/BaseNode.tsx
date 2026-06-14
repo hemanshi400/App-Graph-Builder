@@ -73,10 +73,18 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
   priceLabel = '$0.03/HR',
 }) => {
   const touchStartTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
 
-  const handleTouchStart = () => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     // Only capture long press on mobile viewports (< 1024px)
     if (window.innerWidth >= 1024) return;
+
+    if (e.touches && e.touches.length > 0) {
+      touchStartPos.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY
+      };
+    }
 
     if (touchStartTimeout.current) {
       clearTimeout(touchStartTimeout.current);
@@ -96,12 +104,23 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
       clearTimeout(touchStartTimeout.current);
       touchStartTimeout.current = null;
     }
+    touchStartPos.current = null;
   };
 
-  const handleTouchMove = () => {
-    if (touchStartTimeout.current) {
-      clearTimeout(touchStartTimeout.current);
-      touchStartTimeout.current = null;
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPos.current || !e.touches || e.touches.length === 0) return;
+
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchStartPos.current.x;
+    const dy = touch.clientY - touchStartPos.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // If moved more than 10px, treat as intentional drag/scroll and cancel long press
+    if (distance > 10) {
+      if (touchStartTimeout.current) {
+        clearTimeout(touchStartTimeout.current);
+        touchStartTimeout.current = null;
+      }
     }
   };
 
