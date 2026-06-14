@@ -128,3 +128,10 @@
     @apply font-sans;
     }
 }
+
+/* Position ReactFlow controls higher on mobile viewports to prevent layout cutoff */
+@media (max-width: 1023px) {
+  .react-flow__controls {
+    bottom: 80px !important;
+  }
+}
