@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Handle, Position } from '@xyflow/react';
 import type { ServiceStatus } from '../types';
 import { Cpu, HardDrive, Globe, Layers, Settings } from 'lucide-react';
@@ -48,6 +48,7 @@ const AWSLogo = () => (
 );
 
 export interface BaseNodeProps {
+  id: string;
   selected?: boolean;
   accentColor: 'blue' | 'green';
   typeLabel: 'Service' | 'Database';
@@ -60,6 +61,7 @@ export interface BaseNodeProps {
 }
 
 export const BaseNode: React.FC<BaseNodeProps> = ({
+  id,
   selected,
   accentColor,
   typeLabel,
@@ -70,6 +72,39 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
   status,
   priceLabel = '$0.03/HR',
 }) => {
+  const touchStartTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleTouchStart = () => {
+    // Only capture long press on mobile viewports (< 1024px)
+    if (window.innerWidth >= 1024) return;
+
+    if (touchStartTimeout.current) {
+      clearTimeout(touchStartTimeout.current);
+    }
+
+    touchStartTimeout.current = setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent('node-long-press', {
+          detail: { id, name }
+        })
+      );
+    }, 600); // 600ms hold time
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartTimeout.current) {
+      clearTimeout(touchStartTimeout.current);
+      touchStartTimeout.current = null;
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (touchStartTimeout.current) {
+      clearTimeout(touchStartTimeout.current);
+      touchStartTimeout.current = null;
+    }
+  };
+
   // Determine Logo to show based on node name and type
   const getBrandLogo = (serviceName: string) => {
     const lower = serviceName.toLowerCase();
@@ -123,6 +158,9 @@ export const BaseNode: React.FC<BaseNodeProps> = ({
 
   return (
     <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
       className={`w-80 rounded-2xl bg-[#090a0d] border shadow-2xl transition-all duration-300 overflow-hidden text-neutral-200 select-none ${accentClasses}`}
     >
       {/* Target handle on Left */}

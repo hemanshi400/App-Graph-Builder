@@ -4,12 +4,13 @@ import type { ServiceNodeData } from '../types';
 import { BaseNode } from './BaseNode';
 import { Cpu } from 'lucide-react';
 
-export const ServiceNode: React.FC<NodeProps> = ({ data, selected }) => {
+export const ServiceNode: React.FC<NodeProps> = ({ id, data, selected }) => {
   const serviceData = data as ServiceNodeData;
   const { name, status, value } = serviceData;
 
   return (
     <BaseNode
+      id={id}
       selected={selected}
       accentColor="blue"
       typeLabel="Service"

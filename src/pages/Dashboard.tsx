@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { ReactFlowProvider, applyNodeChanges, applyEdgeChanges } from '@xyflow/react';
 import type { Node, NodeChange, EdgeChange } from '@xyflow/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -19,6 +19,10 @@ export const Dashboard = () => {
   const setSelectedNodeId = useAppStore((state) => state.setSelectedNodeId);
 
   const queryClient = useQueryClient();
+
+  // Long press mobile deletion states
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [nodeToDelete, setNodeToDelete] = useState<Node | null>(null);
 
   // TanStack Query hook
   const { data: graphData, isLoading, isError, error, refetch } = useGraph(selectedAppId);
@@ -134,6 +138,46 @@ export const Dashboard = () => {
     [selectedNodeId, setSelectedNodeId]
   );
 
+  // Delete node manually (used by mobile long-press deletion modal)
+  const deleteNode = useCallback(
+    (nodeId: string) => {
+      if (!selectedAppId) return;
+      queryClient.setQueryData(['graph', selectedAppId], (old: GraphData | undefined) => {
+        if (!old) return old;
+        const updatedNodes = old.nodes.filter((n) => n.id !== nodeId);
+        const updatedEdges = old.edges.filter((e) => e.source !== nodeId && e.target !== nodeId);
+        
+        // Persist in mock database
+        updateMockGraph(selectedAppId, updatedNodes, updatedEdges);
+        
+        return {
+          ...old,
+          nodes: updatedNodes,
+          edges: updatedEdges,
+        };
+      });
+      if (selectedNodeId === nodeId) {
+        setSelectedNodeId(null);
+      }
+    },
+    [selectedAppId, selectedNodeId, setSelectedNodeId, queryClient]
+  );
+
+  // Listen to mobile long-press (touch and hold) DOM events dispatched from BaseNode.tsx
+  useEffect(() => {
+    const handleNodeLongPress = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id: string; name: string }>;
+      const { id, name } = customEvent.detail;
+      setNodeToDelete({ id, data: { name } } as unknown as Node);
+      setShowDeleteDialog(true);
+    };
+
+    window.addEventListener('node-long-press', handleNodeLongPress);
+    return () => {
+      window.removeEventListener('node-long-press', handleNodeLongPress);
+    };
+  }, []);
+
   // Handler to add a new Service Node at a sensible position
   const handleAddNode = useCallback(() => {
     if (!selectedAppId) return;
@@ -228,6 +272,44 @@ export const Dashboard = () => {
           />
         </div>
       </div>
+
+      {/* Mobile touch-and-hold deletion confirmation dialog */}
+      {showDeleteDialog && nodeToDelete && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-in fade-in zoom-in duration-200 text-neutral-200">
+            <h3 className="text-base font-bold text-white mb-2">Delete Node?</h3>
+            <p className="text-xs text-neutral-400 mb-6 leading-relaxed">
+              Are you sure you want to delete <span className="text-white font-semibold font-mono">"{String(nodeToDelete.data?.name || 'this node')}"</span>? This will also remove any connected network edges.
+            </p>
+            <div className="flex items-center justify-end gap-2.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowDeleteDialog(false);
+                  setNodeToDelete(null);
+                }}
+                className="border-neutral-800 bg-neutral-950 text-neutral-400 hover:text-white hover:bg-neutral-805 hover:bg-neutral-800 text-xs px-4 py-2 h-9"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (nodeToDelete) {
+                    deleteNode(nodeToDelete.id);
+                  }
+                  setShowDeleteDialog(false);
+                  setNodeToDelete(null);
+                }}
+                className="bg-rose-600 hover:bg-rose-500 text-white border-none text-xs px-4 py-2 h-9 shadow-lg shadow-rose-600/20"
+              >
+                Delete Node
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </ReactFlowProvider>
   );
 };
