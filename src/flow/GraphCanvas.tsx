@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import {
   ReactFlow,
   Background,
@@ -43,6 +43,43 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   const setIsMobilePanelOpen = useAppStore((state) => state.setIsMobilePanelOpen);
 
   const { fitView } = useReactFlow();
+
+  // Mobile double-tap detection
+  const lastTapRef = useRef<number>(0);
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (window.innerWidth >= 1024) return;
+    if (e.touches.length === 1) {
+      touchStartPosRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (window.innerWidth >= 1024) return;
+    if (!touchStartPosRef.current) return;
+
+    const touch = e.changedTouches[0];
+    if (touch) {
+      const dx = touch.clientX - touchStartPosRef.current.x;
+      const dy = touch.clientY - touchStartPosRef.current.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Treat as a tap if touch didn't move significantly (prevents triggers on swipe/drag)
+      if (distance < 10) {
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300;
+        if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+          setIsMobilePanelOpen(true);
+        }
+        lastTapRef.current = now;
+      }
+    }
+    touchStartPosRef.current = null;
+  };
 
   // Handle keyboard shortcuts
   useEffect(() => {
@@ -100,7 +137,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   }), []);
 
   return (
-    <div className="w-full h-full bg-neutral-950 relative">
+    <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      className="w-full h-full bg-neutral-950 relative"
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
