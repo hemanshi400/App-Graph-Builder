@@ -261,6 +261,7 @@ export const Dashboard = () => {
                 onEdgesChange={onEdgesChange}
                 onNodesDelete={handleNodesDelete}
                 onNodeDragStop={handleNodeDragStop}
+                onAddNode={handleAddNode}
               />
             </div>
           </main>

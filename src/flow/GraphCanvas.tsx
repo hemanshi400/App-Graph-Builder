@@ -27,6 +27,7 @@ interface GraphCanvasProps {
   onEdgesChange: OnEdgesChange;
   onNodesDelete: (nodes: Node[]) => void;
   onNodeDragStop?: OnNodeDrag;
+  onAddNode?: () => void;
 }
 
 export const GraphCanvas: React.FC<GraphCanvasProps> = ({
@@ -35,14 +36,16 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   onNodesChange,
   onEdgesChange,
   onNodesDelete,
-  onNodeDragStop
+  onNodeDragStop,
+  onAddNode
 }) => {
   const selectedNodeId = useAppStore((state) => state.selectedNodeId);
   const setSelectedNodeId = useAppStore((state) => state.setSelectedNodeId);
   const isMobilePanelOpen = useAppStore((state) => state.isMobilePanelOpen);
   const setIsMobilePanelOpen = useAppStore((state) => state.setIsMobilePanelOpen);
+  const setActiveInspectorTab = useAppStore((state) => state.setActiveInspectorTab);
 
-  const { fitView } = useReactFlow();
+  const { fitView, zoomIn, zoomOut } = useReactFlow();
 
   // Mobile double-tap detection
   const lastTapRef = useRef<number>(0);
@@ -122,13 +125,81 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
           }
         }
       }
+
+      // 3. Add Node: A or Ctrl + Alt + N
+      if (key === 'a' || (e.ctrlKey && e.altKey && key === 'n')) {
+        e.preventDefault();
+        onAddNode?.();
+      }
+
+      // 4. Zoom In: + or = or Ctrl + +
+      if (key === '+' || key === '=') {
+        e.preventDefault();
+        zoomIn({ duration: 300 });
+      }
+
+      // 5. Zoom Out: - or Ctrl + -
+      if (key === '-') {
+        e.preventDefault();
+        zoomOut({ duration: 300 });
+      }
+
+      // 6. Deselect Node: Escape
+      if (key === 'escape') {
+        e.preventDefault();
+        setSelectedNodeId(null);
+        if (window.innerWidth < 1024) {
+          setIsMobilePanelOpen(false);
+        }
+      }
+
+      // 7. Cycle Selection: Tab / ArrowRight / ArrowLeft
+      if (nodes.length > 0 && (key === 'arrowright' || key === 'arrowleft' || key === 'tab')) {
+        e.preventDefault();
+        const currentIndex = nodes.findIndex(n => n.id === selectedNodeId);
+        const nextIndex = (key === 'arrowright' || key === 'tab')
+          ? (currentIndex === -1 ? 0 : (currentIndex + 1) % nodes.length)
+          : (currentIndex === -1 ? nodes.length - 1 : (currentIndex - 1 + nodes.length) % nodes.length);
+        const nextNode = nodes[nextIndex];
+        if (nextNode) {
+          setSelectedNodeId(nextNode.id);
+          if (window.innerWidth < 1024) {
+            setIsMobilePanelOpen(true);
+          }
+        }
+      }
+
+      // 8. Switch Inspector Tabs: 1, 2, 3
+      if (selectedNodeId) {
+        if (key === '1') {
+          e.preventDefault();
+          setActiveInspectorTab('config');
+        } else if (key === '2') {
+          e.preventDefault();
+          setActiveInspectorTab('runtime');
+        } else if (key === '3') {
+          e.preventDefault();
+          setActiveInspectorTab('metrics');
+        }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [fitView, isMobilePanelOpen, setIsMobilePanelOpen, selectedNodeId, setSelectedNodeId, nodes]);
+  }, [
+    fitView,
+    zoomIn,
+    zoomOut,
+    isMobilePanelOpen,
+    setIsMobilePanelOpen,
+    selectedNodeId,
+    setSelectedNodeId,
+    setActiveInspectorTab,
+    nodes,
+    onAddNode
+  ]);
 
   // Define node types memoized to prevent re-renders
   const nodeTypes = useMemo(() => ({
