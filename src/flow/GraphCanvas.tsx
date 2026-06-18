@@ -50,6 +50,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
   // Mobile double-tap detection
   const lastTapRef = useRef<number>(0);
   const touchStartPosRef = useRef<{ x: number; y: number } | null>(null);
+  const lastNodeTapRef = useRef<{ id: string; time: number } | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (window.innerWidth >= 1024) return;
@@ -221,9 +222,6 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         onNodeDragStop={onNodeDragStop}
         onNodeDragStart={(_event, node) => {
           setSelectedNodeId(node.id);
-          if (window.innerWidth < 1024) {
-            setIsMobilePanelOpen(true);
-          }
         }}
         onNodeContextMenu={(event, node) => {
           if (window.innerWidth < 1024) {
@@ -237,10 +235,27 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         }}
         nodeTypes={nodeTypes}
         connectionMode={ConnectionMode.Loose}
-        onNodeClick={(_event, node) => {
+        onNodeDoubleClick={(_event, node) => {
           setSelectedNodeId(node.id);
           if (window.innerWidth < 1024) {
             setIsMobilePanelOpen(true);
+          }
+        }}
+        onNodeClick={(_event, node) => {
+          setSelectedNodeId(node.id);
+          if (window.innerWidth < 1024) {
+            const now = Date.now();
+            const DOUBLE_TAP_DELAY = 300;
+            if (
+              lastNodeTapRef.current &&
+              lastNodeTapRef.current.id === node.id &&
+              now - lastNodeTapRef.current.time < DOUBLE_TAP_DELAY
+            ) {
+              setIsMobilePanelOpen(true);
+              lastNodeTapRef.current = null;
+            } else {
+              lastNodeTapRef.current = { id: node.id, time: now };
+            }
           }
         }}
         onPaneClick={() => {

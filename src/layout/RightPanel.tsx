@@ -27,12 +27,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ selectedNode, onUpdateNo
     }
   }, [apps, selectedAppId, setSelectedAppId]);
 
-  // Automatically open mobile panel when a node is selected on mobile
-  useEffect(() => {
-    if (selectedNode && window.innerWidth < 1024) {
-      setIsMobilePanelOpen(true);
-    }
-  }, [selectedNode, setIsMobilePanelOpen]);
+
 
   // Main Right Panel content
   const renderContent = () => (
